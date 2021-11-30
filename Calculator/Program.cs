@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Reflection;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace SimpleCalculator
@@ -9,8 +9,10 @@ namespace SimpleCalculator
         static void Main(string[] args)
         {
             Console.WriteLine("Starting Calculator.");
-            Console.WriteLine("Accpets written values -999 to 999 (ie. negative one)");
+            Console.WriteLine("Accepts written values -999 to 999 (ie. negative one).");
+            Console.WriteLine("Accepts operations  + (plus), - (minus), * (multiply), / (divide)");
             Console.WriteLine("Enter 'Q' to quit.");
+            Console.WriteLine();
 
             // call the calculator method
             Calculator();
@@ -25,17 +27,17 @@ namespace SimpleCalculator
                 // Create a List to store each number and operator
                 List<string> problem = new List<string>();
                 // Create a sting to hold the input
-                string? input;
+                string? input = "";
                 string soultion = "";
                 // Ask user for input (file path or math problem)
                 Console.WriteLine("Enter your math problem or the file path "
-                    + "to a text file with math problems.");
+                    + "to the text file with math problems.");
                 // read input
                 input = Console.ReadLine()?.ToLower();
                 // pattern to match .txt file using a regular expration
                 string pattern = @"\.txt$";
                 Regex txtRegex = new Regex(pattern);
-                Match txtMatch = txtRegex.Match(input);
+                Match txtMatch = txtRegex.Match(input!);
                 bool isTxtFile = txtMatch.Success;
                 // Check if the user entered in a txt file
                 if (input == "")
@@ -50,12 +52,12 @@ namespace SimpleCalculator
                 }
                 else if (isTxtFile)
                 {
-                    ReadTextFile(input, problem, soultion);
+                    ReadTextFile(input!, problem, soultion);
                 }
                 else
                 {
                     // Format input to numbers and operators
-                    input = FormatInput(input);
+                    input = FormatInput(input!);
                     // put input into a List
                     problem = ProcessInput(input);
                     string x = "";
@@ -68,14 +70,6 @@ namespace SimpleCalculator
                     // solve the math problems
                     soultion = x + "=" + SolveProblem(problem);
 
-                    pattern = @"[a-zA-Z]";
-                    txtRegex = new Regex(pattern);
-                    txtMatch = txtRegex.Match(x);
-                    bool isLetters = txtMatch.Success;
-                    if ( isLetters)
-                    {
-                        soultion = x + "=" + "Error";
-                    }
                     // print the soultion to the console and file
                     PrintSoultion(soultion);
                 }
@@ -87,7 +81,7 @@ namespace SimpleCalculator
             try
             {
                 StreamReader readFileLine = new StreamReader(input);
-                input = readFileLine.ReadLine().ToLower();
+                input = readFileLine.ReadLine()?.ToLower();
                 while (input != null)
                 {
                     // Format input to numbers and operators
@@ -101,14 +95,7 @@ namespace SimpleCalculator
                     }
                     // solve the math problems
                     soultion = x + "=" + SolveProblem(problem);
-                    string pattern = @"[a-zA-Z]";
-                    Regex txtRegex = new Regex(pattern);
-                    Match txtMatch = txtRegex.Match(x);
-                    bool isLetters = txtMatch.Success;
-                    if ( isLetters)
-                    {
-                        soultion = x + "=" + "Error";
-                    }
+
                     // print the soultion to the console and file
                     PrintSoultion(soultion);
                     input = readFileLine.ReadLine();
@@ -159,8 +146,19 @@ namespace SimpleCalculator
             input = ConvertToDigits10To19(input, tenToNineteen);
             input = ConvertToDigits0To9(input, digitsArray);
 
+            // Check that there is no letters left in user input.
+            string pattern = @"[a-zA-Z]";
+            Regex txtRegex = new Regex(pattern);
+            Match txtMatch = txtRegex.Match(input);
+            bool isLetters = txtMatch.Success;
+            if ( isLetters)
+            {
+                input = "Input is not the correct format: " + input;
+            }
             return input;
         }
+        // give error if input is not in corret fromat
+        // for example one one or one two
         public static string IsCorretFormat(string input, string[] array)
         {
             for (int i = 0; i < array.Length; i++)
@@ -276,28 +274,28 @@ namespace SimpleCalculator
         public static List<string> ProcessInput(string input)
         {
             List<string> problem = new List<string>();
-            string var = "";
+            string value = "";
             for (int i = 0; i < input.Length; i++)
             {
                 int integer = 0;
                 bool isInt = int.TryParse(input[i].ToString(), out integer);
                 if(isInt || input[i] == '.')
                 {
-                    var += input[i];
+                    value += input[i];
                 }
                 else
                 {
-                    if(var != "")
+                    if(value != "")
                     {
-                        problem.Add(var);
+                        problem.Add(value);
                     }
-                var = input[i].ToString();
-                problem.Add(var);
-                var = "";
+                value = input[i].ToString();
+                problem.Add(value);
+                value = "";
                 }
                 if(i == (input.Length - 1))
                 {
-                    problem.Add(var);
+                    problem.Add(value);
                 }
             }
             return problem;
@@ -376,7 +374,7 @@ namespace SimpleCalculator
             string resultString;
             double num;
             bool isDouble = Double.TryParse(problem[0], out num);
-            if (isDouble)
+            if (isDouble && problem[0] != "∞")
             {
                 resultString = problem[0];
             }
@@ -390,6 +388,7 @@ namespace SimpleCalculator
         public static void PrintSoultion(string soultion)
         {
             Console.WriteLine(soultion);
+            Console.WriteLine();
             try
             {
                 string path = "./MathData/Write_Math.txt";
